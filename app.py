@@ -153,15 +153,38 @@ def handle_payload(psid, payload):
         handle_payload(psid, "GET_STARTED")
 
 
+WHOLESALE_KEYWORDS = ["جملة", "جمله", "تاجر", "بالجملة", "بالجمله", "جمله"]
+RETAIL_KEYWORDS = ["قطعة", "قطعه", "قطعي", "قطاعي", "تجزئة", "تجزئه", "قطعتين", "فردي"]
+DELIVERY_KEYWORDS = ["توصيل", "توصيلة", "توصيله", "دلفري", "delivery"]
+PICKUP_KEYWORDS = ["محل", "استلام", "اجي", "هجي", "بجي", "سأتي", "استلم", "pickup"]
+
+
+def match_keyword(text, keywords):
+    text = text.strip()
+    return any(kw in text for kw in keywords)
+
+
 def handle_free_text(psid, text):
     session = SESSIONS.get(psid, {})
     stage = session.get("stage")
 
-    # لو المستخدم بمنتصف الفلو وكتب نص حر بدل ما يضغط زر، نعيد له نفس الخيارات
     if stage == "ask_type":
+        if match_keyword(text, WHOLESALE_KEYWORDS):
+            handle_payload(psid, "TYPE_WHOLESALE")
+            return
+        if match_keyword(text, RETAIL_KEYWORDS):
+            handle_payload(psid, "TYPE_RETAIL")
+            return
         send_quick_replies(psid, "من فضلك اختر أحد الخيارين:", [("🏢 جملة", "TYPE_WHOLESALE"), ("👤 قطعة", "TYPE_RETAIL")])
         return
+
     if stage == "ask_delivery":
+        if match_keyword(text, DELIVERY_KEYWORDS):
+            handle_payload(psid, "MODE_DELIVERY")
+            return
+        if match_keyword(text, PICKUP_KEYWORDS):
+            handle_payload(psid, "MODE_PICKUP")
+            return
         send_quick_replies(psid, "من فضلك اختر أحد الخيارين:", [("🚚 توصيل", "MODE_DELIVERY"), ("🏬 سآتي للمحل", "MODE_PICKUP")])
         return
 
